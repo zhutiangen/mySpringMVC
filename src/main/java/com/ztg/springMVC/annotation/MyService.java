@@ -2,8 +2,9 @@ package com.ztg.springMVC.annotation;
 
 import java.lang.annotation.*;
 
-@Target({ElementType.TYPE,ElementType.FIELD})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface myRequestMapping {
+public @interface MyService {
+    String value() default "";
 }

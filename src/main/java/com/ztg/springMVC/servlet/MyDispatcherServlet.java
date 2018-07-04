@@ -1,5 +1,8 @@
 package com.ztg.springMVC.servlet;
 
+import com.ztg.springMVC.annotation.MyController;
+import com.ztg.springMVC.annotation.MyService;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -73,6 +76,7 @@ public class MyDispatcherServlet extends HttpServlet {
 
     /**
      * 从扫描包中初始化类
+     * 将每个类的路径信息加载到classNames
      * @param scanPackage
      */
     private void doScanner(String scanPackage) {
@@ -90,17 +94,80 @@ public class MyDispatcherServlet extends HttpServlet {
     }
 
     /**
-     * 开始初始化对象
+     * 根据classNames类信息，进行初始化对象
+     * 将其放入到ioc中存储 beanName - bean
      */
     private void doInstance() {
         if (this.classNames.isEmpty()) {
            return;
         }
+        this.classNames.forEach((String className) -> {
+            // 使用反射，进行实例化，只对于@myController
+            try {
+                // 使用反射得到类的所有信息
+                Class<?> clazz = Class.forName(className);
+
+                // 是用@MyController进行修饰的类
+                if (clazz.isAnnotationPresent(MyController.class)) {
+                    // 初始化类,需要将类的首字符小写，并放到ioc容器中
+                    // clazz.getSimpleName() 得到类的全名  clazz.newInstance()实例化后的对象
+                    this.ioc.put(toLocalFirstWord(clazz.getSimpleName()), clazz.newInstance());
+
+                }else if (clazz.isAnnotationPresent(MyService.class)) {
+                    // 注意：service是接口 需要初始化对应的实现类 MyService注册在实现类上的
+                    MyService myService = clazz.getAnnotation(MyService.class);
+
+                    // 自定义service名
+                    String beanName = myService.value();
+                    if ("".equals(beanName.trim())) {
+                        beanName = this.toLocalFirstWord(beanName);
+                    }
+
+                    // 加入beanName - bean 加入到 ioc
+                    Object instance = clazz.newInstance();
+                    this.ioc.put(beanName, instance);
+
+                    // 得到实现类的所有接口 将interfaceName和实现接口加入
+                    // 一个接口有多个实现类 那么接口名对应的接口对象会被覆盖掉
+                    Class[] interfaces = clazz.getInterfaces();
+                    for (Class<?> i : interfaces) {
+                        this.ioc.put(i.getName(), instance);
+                    }
+                }
+                // 其他不作为
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
+    /**
+     * 自动注入
+     * 技术： 反射
+     */
     private void doAutowired() {
+        if (this.ioc.isEmpty()) {
+            return;
+        }
+
+//        this.ioc.forEach(entry -> {
+//
+//        });
     }
 
     private void initHandlerMapping() {
     }
+
+    /**
+     * 将类的首字母便成小写
+     * @param simpleName
+     * @return
+     */
+    private String toLocalFirstWord(String simpleName) {
+        char[] chars = simpleName.toCharArray();
+        chars[0] = (char) (chars[0] + 32);
+        return String.valueOf(chars);
+    }
+    
+    
 }

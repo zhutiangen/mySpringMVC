@@ -2,9 +2,9 @@ package com.ztg.springMVC.annotation;
 
 import java.lang.annotation.*;
 
-@Target(ElementType.FIELD) // 表示使用在属性上
+@Target({ElementType.TYPE,ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface myAutowired {
-
+public @interface MyRequestMapping {
+    String value() default "";
 }

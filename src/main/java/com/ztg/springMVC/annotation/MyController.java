@@ -2,8 +2,9 @@ package com.ztg.springMVC.annotation;
 
 import java.lang.annotation.*;
 
-@Target(ElementType.PARAMETER)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface myRequestParam {
+public @interface MyController {
+    String value() default "";
 }
