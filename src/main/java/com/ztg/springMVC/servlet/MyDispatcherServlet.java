@@ -1,5 +1,6 @@
 package com.ztg.springMVC.servlet;
 
+import com.ztg.springMVC.annotation.MyAutowired;
 import com.ztg.springMVC.annotation.MyController;
 import com.ztg.springMVC.annotation.MyService;
 
@@ -9,6 +10,7 @@ import javax.servlet.http.HttpServlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
@@ -146,13 +148,40 @@ public class MyDispatcherServlet extends HttpServlet {
      * 技术： 反射
      */
     private void doAutowired() {
+        // ioc 容器中已经存储了许多bean
         if (this.ioc.isEmpty()) {
             return;
         }
 
-//        this.ioc.forEach(entry -> {
-//
-//        });
+        for (Map.Entry<String, Object> entry : this.ioc.entrySet()) {
+
+            Field[] declaredFields = entry.getValue().getClass().getDeclaredFields();
+
+            for (Field field : declaredFields) {
+                if (!field.isAnnotationPresent(MyAutowired.class)) {
+                    continue;
+                }
+
+                // 属性注入
+                MyAutowired myAutowired = field.getAnnotation(MyAutowired.class);
+                String value = myAutowired.value();
+
+                // 默认注入
+                if ("".equals(value)) {
+                    value = field.getType().getName();
+                }
+
+                // 自定义注入
+                field.setAccessible(true);
+                try {
+                    field.set(entry.getValue(), this.ioc.get(value));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+
+            }
+        }
     }
 
     private void initHandlerMapping() {
